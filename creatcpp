@@ -1,0 +1,111 @@
+#! /bin/bash
+
+
+createPremakeFile()
+{
+    projectName=$1
+
+    echo "workspace \"$projectName\""
+    echo
+    echo "architecture \"x64\""
+    echo "configurations"
+    echo "{"
+    echo "  \"Debug\","
+    echo "  \"Release\""
+    echo "}"
+
+    echo
+
+    echo "project \"$projectName\""
+    echo ""
+    echo "  kind \"ConsoleApp\""
+    echo "  language \"C++\""
+    echo "  cppdialect \"c++17\""
+    echo "  location \"%{prj.name}\""
+    echo "  targetdir \"bin/bin/%{cfg.name}_%{cfg.architecture}\""
+    echo "  objdir \"bin/obj/%{cfg.name}_%{cfg.architecture}\""
+
+    echo "  files"
+    echo "  {"
+    echo "      \"%{prj.name}/src/**.cpp\""
+
+    echo "  }"
+
+    echo "filter \"configurations:Debug\""
+    echo "  symbols \"On\""
+
+    echo "filter \"configurations:Release\""
+    echo "  optimize \"On\""
+}
+
+
+createRunScript()
+{
+    file=$1
+    executable=$2
+    prepascript $file
+    echo 'if test $# = 0; then' >> $file
+    echo "    config=Debug" >> $file
+    echo "else" >> $file
+    echo '  config=$1' >> $file
+    echo "fi" >> $file
+    echo "clear" >> $file
+
+    echo "./bin/bin/\$config*/$executable" >> $file
+}
+
+createBuildScript()
+{
+    prepascript $1
+    file=$1
+
+    echo 'if test $# = 0; then' >> $file
+    echo "    config=debug" >> $file
+    echo "else" >> $file
+    echo '  config=$1' >> $file
+    echo "fi" >> $file
+    echo 'logfile=buildlog' >> $file
+    echo "premake5 gmake2" >> $file
+    echo 'make config=$config 2> $logfile' >> $file
+    echo "size=\$(wc -c \$logfile | awk '{print \$1}')" >> $file
+    echo 'if test $size != 0; then' >> $file
+    echo "  open \$logfile" >> $file
+    echo "fi" >> $file
+
+}
+
+createClearProjScript()
+{
+    file=$1
+
+    prepascript $file
+
+
+    echo "rm -r bin" >> $file
+    echo "rm */Makefile Makefile" >> $file
+}
+
+########################## main program ##########################
+
+if test $# = 0; then
+    echo "problem no input"
+    exit 1
+fi
+
+projectName=$1
+
+mkdir $projectName
+mkdir $projectName/scripts
+createPremakeFile $projectName > $projectName/premake5.lua
+
+
+createRunScript $projectName/scripts/run $projectName
+createBuildScript $projectName/scripts/build
+
+createClearProjScript $projectName/scripts/clearproj
+
+
+# Running visual studio code
+code $projectName
+
+

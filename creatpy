@@ -1,0 +1,79 @@
+#! /bin/bash
+
+
+createOption="--create"
+addOption="--add"
+
+rcFilePath="$HOME/bin/rcfiles/creatpy_rc"
+pythonPath="#!$(which python3)"
+
+usage()
+{
+    echo "use the option $createOption to create the projects folder files"
+    echo "You can use a the option $addOption to add a new script file into the current project dir"
+    echo "The project folder created in the current directory"
+}
+
+
+noargsError()
+{
+    argNum=$1
+
+    if test $argNum -eq 0; then
+        echo "No arguments enter the project(s) names(s)"
+        usage
+        exit -1
+    fi
+}
+
+
+addFile()
+{
+    if ! grep -Eq "^$PWD$" $rcFilePath; then
+        echo "This dir is not registred as project directory"
+        exit -1
+    fi
+
+    for file in $@; do
+        fileWithExt=$file.py
+        if ! test -f $fileWithExt; then
+            echo $pythonPath > $fileWithExt
+            chmod 777 $fileWithExt
+        else
+            echo "file $fileWithExt already exists"
+        fi
+    done
+    
+}
+
+createProjectFolder()
+{
+    for file in $@; do
+        mkdir $file
+        echo $PWD/$file >> $rcFilePath
+        $EDITOR $file
+    done
+}
+
+if ! test -f $rcFilePath; then
+    echo "creating rc file"
+    touch $rcFilePath
+fi
+
+noargsError $#
+
+firstArg=$1
+shift
+theRest=$@
+
+if test $firstArg = $createOption; then
+    createProjectFolder $theRest
+
+elif test $firstArg = $addOption; then
+        addFile $theRest
+else
+    usage
+fi
+
+
+
