@@ -1,0 +1,21 @@
+#! /bin/bash
+ 
+resourcesPath=$HOME/bin/resources/createC_res
+
+createProj()
+{
+    projName=$1
+
+    mkdir $projName
+    cd $projName
+    mkdir bin obj src
+    cp $resourcesPath/makefile .
+    touch src/main.c
+
+    $EDITOR .
+}
+
+
+for projName in $@; do
+    createProj $projName
+done
